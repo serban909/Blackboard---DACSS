@@ -231,7 +231,7 @@ class Control
         knowledgeSources.add(knowledgeSource);
     }
 
-    public void execute()
+    public List<String> execute()
     {
         boolean changed;
         int iteration=0;
@@ -258,6 +258,8 @@ class Control
             System.out.println();
 
         } while(changed && !blackboardStore.isEmpty());
+
+        return blackboardStore.getMessages();
     }
 }
 
@@ -288,8 +290,8 @@ public class Blackboard
         blackboardStore.printMessages(messages);
         System.out.println();
         
-        controller.execute();
+        List<String> filteredMessages = controller.execute();
 
-        blackboardStore.printMessages(messages);
+        blackboardStore.printMessages(filteredMessages);
     }   
 }
