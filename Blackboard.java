@@ -234,18 +234,30 @@ class Control
     public void execute()
     {
         boolean changed;
+        int iteration=0;
+
         do
         {
             changed=false;
+            System.out.println("\nIteration "+ (++iteration) +" - Before processing "+ blackboardStore.getMessages());
             for(KnowledgeSource knowledgeSource:knowledgeSources)
             {
                 if(knowledgeSource.execCondition(blackboardStore))
                 {
+                    int beforeSize = blackboardStore.getMessages().size();
                     knowledgeSource.execAction(blackboardStore);
-                    changed=true;
+                    int afterSize = blackboardStore.getMessages().size();
+
+                    if(beforeSize!=afterSize)
+                    {
+                        changed=true;
+                    }
                 }
             }
-        } while(changed);
+            System.out.println("Iteration " + iteration + " - After Processing: " + blackboardStore.getMessages());
+            System.out.println();
+
+        } while(changed && !blackboardStore.isEmpty());
     }
 }
 
@@ -274,6 +286,7 @@ public class Blackboard
         controller.addKnowledgeSource(new SentimentAnalyzer());
 
         blackboardStore.printMessages(messages);
+        System.out.println();
         
         controller.execute();
 
