@@ -1,200 +1,261 @@
 import java.util.*;
 
-interface KnowledgeSource
+interface KnowledgeSource 
 {   
-    boolean execCondition(BlackboardStore blackboardStore);
-    void execAction(BlackboardStore blackboardStore);
+    public boolean execCondition(BlackboardStore blackboardStore);
+    public void execAction(BlackboardStore blackboardStore);
+    public boolean isEliminator();
 }
 
-class BlackboardStore
+class BlackboardStore 
 {
-    private List<String> messages=new ArrayList<>();
+    private List<String> messages = new ArrayList<>();
+    private int eliminatorCounter = 0;
+    private boolean transformationFlag = false;
 
-    public void addMessages(List<String> newMessages)
+    public void addMessages(List<String> newMessages) 
     {
         messages.addAll(newMessages);
     }
 
-    public List<String> getMessages()
+    public List<String> getMessages() 
     {
         return new ArrayList<>(messages);
     }
 
-    public void updatedMessage(List<String> updatedMessages)
+    public void updateMessages(List<String> updatedMessages) 
     {
         messages.clear();
         messages.addAll(updatedMessages);
     }
 
-    public void printMessages(List<String> messages) 
+    public void printMessages() 
     {
-        for(String message: messages)
+        for (String message : messages) 
         {
             System.out.println(message);
         }
-    } 
+    }
 
-    public boolean isEmpty()
+    public boolean isEmpty() 
     {
         return messages.isEmpty();
     }
-}
 
-class BuyerFilter implements KnowledgeSource
-{
-    private HashSet<String> buyers;
-
-    public BuyerFilter(HashSet<String> buyers)
+    public void increaseEliminatorCounter() 
     {
-        this.buyers=buyers;
+        eliminatorCounter++;
     }
 
-    public void execAction(BlackboardStore blackboardStore)
+    public boolean areEliminatorFinished(int eliminatorCount) 
     {
-        List<String> validMessages =new ArrayList<>();
+        return eliminatorCounter >= eliminatorCount;
+    }
 
-        for(String message : blackboardStore.getMessages())
+    public void setTransformationFlag(boolean value) 
+    {
+        transformationFlag = value;
+    }
+
+    public boolean canTransform() 
+    {
+        return transformationFlag;
+    }
+}
+
+class BuyerFilter implements KnowledgeSource 
+{
+    private Set<String> buyers;
+
+    public BuyerFilter(Set<String> buyers) 
+    {
+        this.buyers = buyers;
+    }
+
+    public void execAction(BlackboardStore blackboardStore) 
+    {
+        List<String> validMessages = new ArrayList<>();
+
+        for (String message : blackboardStore.getMessages()) 
         {
-            String[] parts=message.split(", ");
-            if(parts.length>=2 && buyers.contains(parts[0]+" - "+parts[1]))
+            String[] parts = message.split(", ");
+            if (parts.length >= 2 && buyers.contains(parts[0] + " - " + parts[1])) 
             {
                 validMessages.add(message);
             }
         }
 
-        blackboardStore.updatedMessage(validMessages);
+        blackboardStore.updateMessages(validMessages);
+        blackboardStore.increaseEliminatorCounter();
     }
 
-    public boolean execCondition(BlackboardStore blackboardStore)
+    public boolean execCondition(BlackboardStore blackboardStore) 
     {
         return !blackboardStore.isEmpty();
     }
+
+    public boolean isEliminator() 
+    {
+        return true;
+    }
 }
 
-class ProfanityFilter implements KnowledgeSource
+class ProfanityFilter implements KnowledgeSource 
 {
-    public void execAction(BlackboardStore blackboardStore)
+    public void execAction(BlackboardStore blackboardStore) 
     {
-        List<String> filtredMessages =new ArrayList<>();
+        List<String> filteredMessages = new ArrayList<>();
 
-        for(String message : blackboardStore.getMessages())
+        for (String message : blackboardStore.getMessages()) 
         {
-            if(!message.contains("@#$%"))
+            if (!message.contains("@#$%")) 
             {
-                filtredMessages.add(message);
+                filteredMessages.add(message);
             }
         }
 
-        blackboardStore.updatedMessage(filtredMessages);
+        blackboardStore.updateMessages(filteredMessages);
+        blackboardStore.increaseEliminatorCounter();
     }
 
-    public boolean execCondition(BlackboardStore blackboardStore)
+    public boolean execCondition(BlackboardStore blackboardStore) 
     {
         return !blackboardStore.isEmpty();
     }
+
+    public boolean isEliminator() 
+    {
+        return true;
+    }
 }
 
-class PoliticalFilter implements KnowledgeSource
+class PoliticalFilter implements KnowledgeSource 
 {
-    public void execAction(BlackboardStore blackboardStore)
+    public void execAction(BlackboardStore blackboardStore) 
     {
-        List<String> filtredMessages =new ArrayList<>();
+        List<String> filteredMessages = new ArrayList<>();
 
-        for(String message : blackboardStore.getMessages())
+        for (String message : blackboardStore.getMessages()) 
         {
-            if(!message.contains("---") && !message.contains("+++"))
+            if (!message.contains("---") && !message.contains("+++")) 
             {
-                filtredMessages.add(message);
+                filteredMessages.add(message);
             }
         }
 
-        blackboardStore.updatedMessage(filtredMessages);
+        blackboardStore.updateMessages(filteredMessages);
+        blackboardStore.increaseEliminatorCounter();
     }
 
-    public boolean execCondition(BlackboardStore blackboardStore)
+    public boolean execCondition(BlackboardStore blackboardStore) 
     {
         return !blackboardStore.isEmpty();
     }
+
+    public boolean isEliminator() 
+    {
+        return true;
+    }
 }
 
-class ImageResizer implements KnowledgeSource
+class ImageResizer implements KnowledgeSource 
 {
-    public void execAction(BlackboardStore blackboardStore)
+    public void execAction(BlackboardStore blackboardStore) 
     {
-        List<String> updatedMessages=new ArrayList<>();
+        List<String> updatedMessages = new ArrayList<>();
+        boolean modified = false;
 
-        for(String message : blackboardStore.getMessages())
+        for (String message : blackboardStore.getMessages()) 
         {
-            String[] words=message.split(", ");
-            if(words.length==4)
+            String[] words = message.split(", ");
+            if (words.length == 4) 
             {
-                words[3]=words[3].toLowerCase();
+                words[3] = words[3].toLowerCase();
+                modified = true;
             }
-
             updatedMessages.add(String.join(", ", words));
         }
 
-        blackboardStore.updatedMessage(updatedMessages);
+        blackboardStore.updateMessages(updatedMessages);
+        blackboardStore.setTransformationFlag(modified);
     }
 
-    public boolean execCondition(BlackboardStore blackboardStore)
+    public boolean execCondition(BlackboardStore blackboardStore) 
     {
-        return !blackboardStore.isEmpty();
+        return blackboardStore.areEliminatorFinished(3) && !blackboardStore.isEmpty();
+    }
+
+    public boolean isEliminator() 
+    {
+        return false;
     }
 }
 
-class LinkRemover implements KnowledgeSource
+class LinkRemover implements KnowledgeSource 
 {
-    public void execAction(BlackboardStore blackboardStore)
+    public void execAction(BlackboardStore blackboardStore) 
     {
-        List<String> updatedMessages=new ArrayList<>();
+        List<String> updatedMessages = new ArrayList<>();
+        boolean modified = false;
 
-        for(String message : blackboardStore.getMessages())
+        for (String message : blackboardStore.getMessages()) 
         {
-            updatedMessages.add(message.replace("http", ""));    
+            String newMessage = message.replace("http", "");
+            if (!newMessage.equals(message)) 
+            {
+                modified = true;
+            }
+            updatedMessages.add(newMessage);
         }
 
-        blackboardStore.updatedMessage(updatedMessages);
+        blackboardStore.updateMessages(updatedMessages);
+        blackboardStore.setTransformationFlag(modified);
     }
 
-    public boolean execCondition(BlackboardStore blackboardStore)
+    public boolean execCondition(BlackboardStore blackboardStore) 
     {
-        return !blackboardStore.isEmpty();
+        return blackboardStore.areEliminatorFinished(3) && !blackboardStore.isEmpty();
+    }
+
+    public boolean isEliminator() 
+    {
+        return false;
     }
 }
 
-class SentimentAnalyzer implements KnowledgeSource
+class SentimentAnalyzer implements KnowledgeSource 
 {
-    public void execAction(BlackboardStore blackboardStore)
+    public void execAction(BlackboardStore blackboardStore) 
     {
-        List<String> updatedMessages=new ArrayList<>();
+        List<String> updatedMessages = new ArrayList<>();
+        boolean modified = false;
 
-        for(String message : blackboardStore.getMessages())
+        for (String message : blackboardStore.getMessages()) 
         {
-            String[] words=message.split(", ");
-            if(words.length>=3)
+            String[] words = message.split(", ");
+            if (words.length >= 3) 
             {
-                String reviewedText=words[2];
-                int upperCase=0;
-                int lowerCase=0;
+                String review = words[2];
+                int upper=0;
+                int lower=0;
 
-                for(char c: reviewedText.toCharArray())
+                for(char c:review.toCharArray())
                 {
-                    if(Character.isUpperCase(c))
+                    if (Character.isUpperCase(c))
                     {
-                        upperCase++;
+                        upper++;
                     }
-                    else if(Character.isLowerCase(c))
+                    else if (Character.isLowerCase(c))
                     {
-                        lowerCase++;
+                        lower++;
                     }
                 }
 
-                if(upperCase>lowerCase)
+                if(upper>lower)
                 {
                     words[2]+="+";
                 }
-                else if(lowerCase>upperCase)
+                else if(lower>upper)
                 {
                     words[2]+="-";
                 }
@@ -202,64 +263,70 @@ class SentimentAnalyzer implements KnowledgeSource
                 {
                     words[2]+="=";
                 }
-            }
 
+                modified = true;
+            }
             updatedMessages.add(String.join(", ", words));
         }
 
-        blackboardStore.updatedMessage(updatedMessages);
+        blackboardStore.updateMessages(updatedMessages);
+        blackboardStore.setTransformationFlag(modified);
     }
 
-    public boolean execCondition(BlackboardStore blackboardStore)
+    public boolean execCondition(BlackboardStore blackboardStore) 
     {
-        return !blackboardStore.isEmpty();
+        return blackboardStore.areEliminatorFinished(3) && !blackboardStore.isEmpty();
+    }
+
+    public boolean isEliminator() 
+    {
+        return false;
     }
 }
 
-class Control
-{
-    private BlackboardStore blackboardStore;
-    private List<KnowledgeSource> knowledgeSources=new ArrayList<>();
+class Control {
+    private final BlackboardStore blackboardStore;
+    private final List<KnowledgeSource> eliminators = new ArrayList<>();
+    private final List<KnowledgeSource> transformers = new ArrayList<>();
 
-    public Control(BlackboardStore blackboardStore)
+    public Control(BlackboardStore blackboardStore) 
     {
-        this.blackboardStore=blackboardStore;
+        this.blackboardStore = blackboardStore;
     }
 
-    public void addKnowledgeSource(KnowledgeSource knowledgeSource)
+    public void addKnowledgeSource(KnowledgeSource filter) 
     {
-        knowledgeSources.add(knowledgeSource);
-    }
-
-    public List<String> execute()
-    {
-        boolean changed;
-        int iteration=0;
-
-        do
+        if (filter.isEliminator()) 
         {
-            changed=false;
-            System.out.println("\nIteration "+ (++iteration) +" - Before processing "+ blackboardStore.getMessages());
-            for(KnowledgeSource knowledgeSource:knowledgeSources)
+            eliminators.add(filter);
+        } 
+        else 
+        {
+            transformers.add(filter);
+        }
+    }
+
+    public void execute() 
+    {
+        Collections.shuffle(eliminators);
+        System.out.println("Elimiators order: "+eliminators);
+        for (KnowledgeSource filter : eliminators) 
+        {
+            if (filter.execCondition(blackboardStore)) 
             {
-                if(knowledgeSource.execCondition(blackboardStore))
-                {
-                    int beforeSize = blackboardStore.getMessages().size();
-                    knowledgeSource.execAction(blackboardStore);
-                    int afterSize = blackboardStore.getMessages().size();
-
-                    if(beforeSize!=afterSize)
-                    {
-                        changed=true;
-                    }
-                }
+                filter.execAction(blackboardStore);
             }
-            System.out.println("Iteration " + iteration + " - After Processing: " + blackboardStore.getMessages());
-            System.out.println();
+        }
 
-        } while(changed && !blackboardStore.isEmpty());
-
-        return blackboardStore.getMessages();
+        Collections.shuffle(transformers);
+        System.out.println("Transformers order: "+transformers);
+        for (KnowledgeSource filter : transformers) 
+        {
+            if (filter.execCondition(blackboardStore) && blackboardStore.canTransform()) 
+            {
+                filter.execAction(blackboardStore);
+            }
+        }
     }
 }
 
@@ -287,11 +354,11 @@ public class Blackboard
         controller.addKnowledgeSource(new LinkRemover());
         controller.addKnowledgeSource(new SentimentAnalyzer());
 
-        blackboardStore.printMessages(messages);
+        blackboardStore.printMessages();
         System.out.println();
         
-        List<String> filteredMessages = controller.execute();
+        controller.execute();
 
-        blackboardStore.printMessages(filteredMessages);
+        blackboardStore.printMessages();
     }   
 }
